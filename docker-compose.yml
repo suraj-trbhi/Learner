@@ -1,0 +1,50 @@
+services:
+  calculator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: calculator-app:latest
+    container_name: python-calculator
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8080:8080"  # Web interface
+    volumes:
+      # Mount source code for development (optional)
+      - ./calculator.py:/app/calculator.py:ro
+      - ./web_calculator.py:/app/web_calculator.py:ro
+      - ./templates:/app/templates:ro
+    networks:
+      - calculator-network
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # CLI version of the calculator
+  calculator-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: calculator-app:latest
+    container_name: python-calculator-cli
+    stdin_open: true  # Enable interactive mode
+    tty: true         # Allocate a pseudo-TTY
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["python", "calculator.py"]
+    volumes:
+      - ./calculator.py:/app/calculator.py:ro
+    networks:
+      - calculator-network
+    profiles:
+      - cli  # Only start with --profile cli
+
+networks:
+  calculator-network:
+    driver: bridge

@@ -1,0 +1,13 @@
+# Core dependencies for the calculator project
+# Math operations use built-in Python math module
+
+# Web interface dependencies
+flask==3.0.0
+gunicorn==21.2.0
+
+# Testing and development
+pytest==7.4.2
+black==23.7.0
+
+# Optional future extensions
+# requests==2.31.0  # For external API calls

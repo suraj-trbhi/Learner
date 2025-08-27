@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .calculator-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .operation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .operation-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .operation-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .operation-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f5e8;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .error {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8d7da;
+            border-radius: 10px;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .api-info {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .api-info h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .api-info code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>🧮 Python Calculator</h1>
+        
+        <div class="operation-grid">
+            <!-- Basic Operations -->
+            <div class="operation-card">
+                <h3>➕ Addition</h3>
+                <div class="input-group">
+                    <label>First Number:</label>
+                    <input type="number" id="add-a" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Second Number:</label>
+                    <input type="number" id="add-b" step="any">
+                </div>
+                <button onclick="calculate('add', 'add-a', 'add-b')">Calculate</button>
+            </div>
+            
+            <div class="operation-card">
+                <h3>➖ Subtraction</h3>
+                <div class="input-group">
+                    <label>First Number:</label>
+                    <input type="number" id="sub-a" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Second Number:</label>
+                    <input type="number" id="sub-b" step="any">
+                </div>
+                <button onclick="calculate('subtract', 'sub-a', 'sub-b')">Calculate</button>
+            </div>
+            
+            <div class="operation-card">
+                <h3>✖️ Multiplication</h3>
+                <div class="input-group">
+                    <label>First Number:</label>
+                    <input type="number" id="mul-a" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Second Number:</label>
+                    <input type="number" id="mul-b" step="any">
+                </div>
+                <button onclick="calculate('multiply', 'mul-a', 'mul-b')">Calculate</button>
+            </div>
+            
+            <div class="operation-card">
+                <h3>➗ Division</h3>
+                <div class="input-group">
+                    <label>Dividend:</label>
+                    <input type="number" id="div-a" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Divisor:</label>
+                    <input type="number" id="div-b" step="any">
+                </div>
+                <button onclick="calculate('divide', 'div-a', 'div-b')">Calculate</button>
+            </div>
+            
+            <div class="operation-card">
+                <h3>🔢 Power</h3>
+                <div class="input-group">
+                    <label>Base:</label>
+                    <input type="number" id="pow-a" step="any">
+                </div>
+                <div class="input-group">
+                    <label>Exponent:</label>
+                    <input type="number" id="pow-b" step="any">
+                </div>
+                <button onclick="calculate('power', 'pow-a', 'pow-b')">Calculate</button>
+            </div>
+            
+            <div class="operation-card">
+                <h3>√ Square Root</h3>
+                <div class="input-group">
+                    <label>Number:</label>
+                    <input type="number" id="sqrt-a" step="any" min="0">
+                </div>
+                <button onclick="calculate('square_root', 'sqrt-a')">Calculate</button>
+            </div>
+        </div>
+        
+        <div id="result" class="result hidden">
+            <strong>Result: </strong><span id="result-value"></span>
+        </div>
+        
+        <div id="error" class="error hidden">
+            <strong>Error: </strong><span id="error-message"></span>
+        </div>
+        
+        <div class="api-info">
+            <h3>🔗 API Information</h3>
+            <p>This calculator also provides a REST API:</p>
+            <ul>
+                <li><strong>Health Check:</strong> <code>GET /api/health</code></li>
+                <li><strong>Calculate:</strong> <code>POST /api/calculate</code></li>
+            </ul>
+            <p>Example API request:</p>
+            <pre><code>{
+  "operation": "add",
+  "a": 5,
+  "b": 3
+}</code></pre>
+        </div>
+    </div>
+    
+    <script>
+        async function calculate(operation, inputAId, inputBId = null) {
+            const a = parseFloat(document.getElementById(inputAId).value);
+            const b = inputBId ? parseFloat(document.getElementById(inputBId).value) : null;
+            
+            if (isNaN(a) || (inputBId && isNaN(b))) {
+                showError('Please enter valid numbers');
+                return;
+            }
+            
+            const payload = { operation, a };
+            if (b !== null) {
+                payload.b = b;
+            }
+            
+            try {
+                const response = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(data.result);
+                } else {
+                    showError(data.error);
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+        
+        function showResult(result) {
+            document.getElementById('result-value').textContent = result;
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('error').classList.add('hidden');
+        }
+        
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+            document.getElementById('result').classList.add('hidden');
+        }
+        
+        // Add enter key support
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                // Find the focused input and trigger its corresponding calculate function
+                const focusedElement = document.activeElement;
+                if (focusedElement.tagName === 'INPUT') {
+                    const button = focusedElement.closest('.operation-card').querySelector('button');
+                    if (button) {
+                        button.click();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

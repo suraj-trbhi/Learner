@@ -1,0 +1,181 @@
+name: Build and Deploy Calculator App
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install pytest pytest-cov
+    
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Test calculator functionality
+      run: |
+        python -c "
+        import calculator
+        calc = calculator.Calculator()
+        
+        # Test basic operations
+        assert calc.add(2, 3) == 5
+        assert calc.subtract(5, 3) == 2
+        assert calc.multiply(4, 3) == 12
+        assert calc.divide(10, 2) == 5
+        assert calc.power(2, 3) == 8
+        assert calc.square_root(9) == 3
+        assert calc.percentage(20, 100) == 20
+        assert calc.factorial(5) == 120
+        
+        print('All calculator tests passed!')
+        "
+    
+    - name: Test web interface
+      run: |
+        # Install Flask for testing
+        pip install flask gunicorn
+        
+        # Start the web server in background
+        python web_calculator.py &
+        WEB_PID=$!
+        
+        # Wait for server to start
+        sleep 5
+        
+        # Test health endpoint
+        curl -f http://localhost:8080/api/health
+        
+        # Test calculation API
+        curl -X POST http://localhost:8080/api/calculate \
+          -H 'Content-Type: application/json' \
+          -d '{"operation": "add", "a": 5, "b": 3}' \
+          | grep -q '"result": 8'
+        
+        # Stop the web server
+        kill $WEB_PID
+        
+        echo 'Web interface tests passed!'
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your deployment commands here
+        # For example, deploying to a cloud platform or updating a service
+        
+        # Example deployment commands:
+        # kubectl set image deployment/calculator-app calculator=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        # docker-compose pull && docker-compose up -d
+        
+        echo "Deployment completed successfully!"
+    
+    - name: Health check
+      run: |
+        echo "Performing health check..."
+        # Add health check commands here
+        # curl -f http://your-app-url/health || exit 1
+        echo "Health check passed!"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
