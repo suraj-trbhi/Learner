@@ -1,5 +1,7 @@
 import math
 
+"""dummy calculator"""
+
 class Calculator:
     """A comprehensive calculator with basic and advanced operations."""
     
